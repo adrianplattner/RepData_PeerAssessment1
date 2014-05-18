@@ -2,19 +2,60 @@
 
 
 ## Loading and preprocessing the data
-
+```{r}
+  unzip('activity.zip')
+  activity <- read.csv('activity.csv')
+  activity$date <-as.Date(as.character(activity$date),'%Y-%m-%d')
+  str(activity)
+```
 
 
 ## What is mean total number of steps taken per day?
-
-
+```{r}
+  steps.per.day <- tapply(activity$steps,activity$date,sum,na.rm=TRUE)
+  hist(steps.per.day,breaks=20)
+  summary(steps.per.day)
+  steps.mean <- mean(steps.per.day)
+```
+the mean is `r steps.mean`
 
 ## What is the average daily activity pattern?
+```{r}
+  library(scales)
+  library(ggplot2)
+  steps.per.interval <- tapply(activity$steps,activity$interval,sum,na.rm=TRUE)
+  xtime <- as.POSIXct(strptime("2011-03-27 00:00:00", "%Y-%m-%d %H:%M:%S"))
+  activity.interval <- data.frame(date = seq(xtime, len=288, by="5 mins"),steps=as.numeric(steps.per.interval))
+steps.interval <- qplot(date,steps,data=activity.interval,geom='line')
+steps.interval + scale_x_datetime(breaks="30 mins",labels = date_format("%H-%M"))+theme(axis.text.x = element_text(angle = 90, hjust = 0.5))
+```
+```{r}
+  max.time <- strftime(activity.interval[which.max(activity.interval$steps),1],"%H:%M")
+```
 
+The max step value is in `r max.time`
 
 
 ## Imputing missing values
+```{r}
+  str(activity)
+  total.na <- sum(is.na(activity))
+```
+  total count of NA's is `r total.na`
 
+```{r}
+  meanFor <- function(d){
+  mean(subset(activity,date == d)$steps,na.rm=TRUE)
+}
+activity$steps <- as.numeric(activity$steps )
+activity.without.na <- activity
+activity.without.na$steps <- as.numeric(activity.without.na$steps )
+
+activity.without.na[is.na(activity.without.na),1]  <- meanFor(activity.without.na[is.na(activity.without.na),2])
+
+summary(activity.without.na)
+
+```
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
